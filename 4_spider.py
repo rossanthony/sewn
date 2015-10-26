@@ -12,14 +12,16 @@ logging.basicConfig(level=logging.DEBUG)
 
 class Spider(object):
 
-    def __init__(self, baseUrl):
-        print(sys.argv)
-        self.baseUrl = baseUrl
-        self.level = 0
-        self.depth = 16 # going to 10 causes a timeout!
-        self.crawlTxt = ''
-        self.urlTrail = defaultdict(list)
-        self.urlsVisited = defaultdict(list)
+    def __init__(self):
+        #print(sys.argv[1])
+        self.baseUrl = sys.argv[1]  # URL to be indexed, the starting point for the crawler
+        self.level = 0  # Starting level, gets incremented each time a new page is crawled
+        self.depth = 15 # Limit for number of pages deep the spider should crawl
+        self.allowDupes = False # Toggles whether to record duplicate URLs per page
+
+        # Data structures
+        self.urlsVisited = defaultdict(list) # holds a list of the URLs visited in order
+        self.pageLinks = defaultdict(list) # holds a list of the links 
         
         # Get the robots.txt
         self.robotParser = robotparser.RobotFileParser()
@@ -30,8 +32,8 @@ class Spider(object):
         self.crawlForLinks(self.baseUrl)
         
         # Log the result (for debugging during development only)
-        logging.debug(self.urlTrail)
         logging.debug(self.urlsVisited)
+        logging.debug(self.pageLinks)
 
         # self.saveCrawlerFile()
         # self.saveResultsFile()
@@ -43,19 +45,19 @@ class Spider(object):
         tree = html.fromstring(page.text)
         anchors = tree.xpath('//a') # Get all anchors on the page
         self.level += 1
-        self.urlTrail[self.level].append(url)
+        self.urlsVisited[self.level].append(url)
 
         for link in anchors:
             if 'href' in link.attrib:
                 # Add each 'unqiue' link on the current page being crawled into the dictionary
-                if not self.pageAlreadyAdded(self.getAbsoluteUrl(link, url)):
-                    self.urlsVisited[self.level].append(self.getAbsoluteUrl(link, url))
+                if not self.pageAlreadyAdded(self.getAbsoluteUrl(link, url)) or self.allowDupes:
+                    self.pageLinks[self.level].append(self.getAbsoluteUrl(link, url))
             # else:
             #     logging.debug(link)
             #     print " ^^ " + url + " must contain an anchor element without an href attribute!!"
 
         # Recursive back through the urls just found on this page and run crawls on those pages
-        for url in self.urlsVisited[self.level]:
+        for url in self.pageLinks[self.level]:
             if self.isAllowedUrl(url) and self.level < self.depth:
                 if self.urlAlreadyCrawled(url):
                     print url + " already checked"
@@ -63,9 +65,6 @@ class Spider(object):
                     self.crawlForLinks(url)
             else:
                 print "Disallowed URL: %s %s\n" % (self.level, url)
-
-
-        
 
 
     def crawl(self, urlToCrawl):
@@ -84,15 +83,15 @@ class Spider(object):
 
 
     def urlAlreadyCrawled(self, url):
-        for k in self.urlTrail:
-            for v in self.urlTrail[k]:
+        for k in self.urlsVisited:
+            for v in self.urlsVisited[k]:
                 if url in v:
                     return True
         return False
 
 
     def pageAlreadyAdded(self, url):
-        for v in self.urlsVisited[self.level]:
+        for v in self.pageLinks[self.level]:
             if url in v:
                 return True
         return False
@@ -161,4 +160,4 @@ class Spider(object):
 # Disallow: /private/
 
 # Get the spider crawling...
-Spider('http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/')
+Spider()
