@@ -21,7 +21,7 @@ from collections import defaultdict # dictionary data structure lib
 import sys                   # required for getting arg's from the shell
 import logging               # for outputting logs during development and for debugging purposes
 
-#logging.basicConfig(level=logging.DEBUG)  
+logging.basicConfig(level=logging.DEBUG)  
 # ^ this provides verbose logging output for HTTP GET requests, eg:
 # INFO:requests.packages.urllib3.connectionpool:Starting new HTTP connection (1): www.dcs.bbk.ac.uk
 # DEBUG:requests.packages.urllib3.connectionpool:"GET /~martin/sewn/ls3/ HTTP/1.1" 200 221
@@ -188,16 +188,26 @@ class Spider(object):
     #       <No of links to Visited pages: Y>
     # ... etc.    
     def saveResultsFile(self):
+        totalLinks = []
         output = ''
         for visitedUrlKey in self.urlsVisited:
             for visitedUrl in self.urlsVisited[visitedUrlKey]:
                 output += "<Visited " + visitedUrl + ">\n"
-                for linkOnPage in self.pageLinks[visitedUrlKey]:
-                    output += "\t<Link " + linkOnPage + ">\n"
-        crawlerFile = open("crawl.txt", "w")
+                output += "\t<No of links to Visited page: "
+                output += str(self.getLinkCount(visitedUrl)) 
+                output += ">\n"
+        crawlerFile = open("results.txt", "w")
         crawlerFile.write(str(output))
         crawlerFile.close()
         return True
+
+    def getLinkCount(self, url):
+        count = 0
+        for page in self.pageLinks:
+            for link in self.pageLinks[page]:
+                if link == url:
+                    count += 1
+        return count
 
 
 # Set the spider crawling...
