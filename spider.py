@@ -51,7 +51,7 @@ class Spider(object):
         # logging.debug(self.urlsVisited)
         # logging.debug(self.pageLinks)
 
-        # self.saveCrawlerFile()
+        self.saveCrawlerFile()
         self.saveResultsFile()
 
     
@@ -77,25 +77,10 @@ class Spider(object):
             if self.isAllowedUrl(url) and self.level < self.depth:
                 if not self.urlAlreadyCrawled(url):
                     self.crawlForLinks(url)
-                # else:
-                #     print url + " already checked" 
+            #     else:
+            #         print url + " already checked" 
             # else:
             #     print "Disallowed URL: %s %s\n" % (self.level, url)
-
-
-    def crawl(self, urlToCrawl):
-        self.crawlTxt += "<Visited " + urlToCrawl + ">\n"
-        page = requests.get(urlToCrawl)
-        tree = html.fromstring(page.text)
-        #Get all anchors on the page
-        anchors = tree.xpath('//a')
-        for link in anchors:
-            self.crawlTxt += "\t<Link " + self.getAbsoluteUrl(link, urlToCrawl) + ">\n"
-
-        # Now loop through each URL and 
-        # check that its not restricted in robots.txt or outside of the root path of the site
-        # for link in anchors:
-        #     print self.getAbsoluteUrl(link)
 
 
     def urlAlreadyCrawled(self, url):
@@ -108,7 +93,7 @@ class Spider(object):
 
     def pageAlreadyAdded(self, url):
         for v in self.pageLinks[self.level]:
-            if url in v:
+            if url == v:
                 return True
         return False
 

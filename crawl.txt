@@ -102,6 +102,7 @@
 	<Link http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/mark.htm>
 <Visited http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/webdyn.htm>
 	<Link http://www2002.org/fulldayworkshops.html>
+	<Link http://www2002.org/>
 	<Link http://www.dcs.bbk.ac.uk/webDyn/>
 	<Link http://www.webdyn.org/index.html>
 	<Link http://www.webdyn.org/onlineProceedings.html>
