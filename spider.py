@@ -33,7 +33,10 @@ class Spider(object):
         self.baseUrl = sys.argv[1] # URL to be indexed, the starting point for the crawler
         self.depth = sys.argv[2]   # Limit for number of pages deep the spider should crawl
         self.level = 0             # Starting level, gets incremented each time a new page is crawled
-        self.allowDupes = False    # Toggles whether to record duplicate URLs per page
+        self.allowDupes = True     # Toggles whether to record duplicate URLs per page
+        
+        # Cmd line override for allowDupes toggle
+        if len(sys.argv) > 3: self.allowDupes = False
 
         # Data structures
         self.urlsVisited = defaultdict(list) # holds an ordered list of the URLs visited
