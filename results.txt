@@ -1,26 +1,26 @@
 <Visited http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/>
-	<No of links to Visited page: 0>
+	<No of links to Visited pages: 1>
 <Visited http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/martin.htm>
-	<No of links to Visited page: 3>
+	<No of links to Visited pages: 1>
 <Visited http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/mark.htm>
-	<No of links to Visited page: 5>
+	<No of links to Visited pages: 7>
 <Visited http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/webtech.htm>
-	<No of links to Visited page: 2>
+	<No of links to Visited pages: 3>
 <Visited http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/lkl.htm>
-	<No of links to Visited page: 2>
+	<No of links to Visited pages: 1>
 <Visited http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/scsis.htm>
-	<No of links to Visited page: 3>
+	<No of links to Visited pages: 2>
 <Visited http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/research.htm>
-	<No of links to Visited page: 3>
+	<No of links to Visited pages: 3>
 <Visited http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/phd.htm>
-	<No of links to Visited page: 2>
+	<No of links to Visited pages: 3>
 <Visited http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/students.htm>
-	<No of links to Visited page: 2>
+	<No of links to Visited pages: 3>
 <Visited http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/foo.htm>
-	<No of links to Visited page: 2>
+	<No of links to Visited pages: 0>
 <Visited http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/azy.htm>
-	<No of links to Visited page: 2>
+	<No of links to Visited pages: 2>
 <Visited http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/lower/directories/staff.htm>
-	<No of links to Visited page: 1>
+	<No of links to Visited pages: 2>
 <Visited http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/webdyn.htm>
-	<No of links to Visited page: 1>
+	<No of links to Visited pages: 0>

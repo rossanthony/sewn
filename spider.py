@@ -21,7 +21,7 @@ from collections import defaultdict # dictionary data structure lib
 import sys                   # required for getting arg's from the shell
 import logging               # for outputting logs during development and for debugging purposes
 
-logging.basicConfig(level=logging.DEBUG)  
+logging.basicConfig(level=logging.DEBUG)
 # ^ this provides verbose logging output for HTTP GET requests, eg:
 # INFO:requests.packages.urllib3.connectionpool:Starting new HTTP connection (1): www.dcs.bbk.ac.uk
 # DEBUG:requests.packages.urllib3.connectionpool:"GET /~martin/sewn/ls3/ HTTP/1.1" 200 221
@@ -51,7 +51,7 @@ class Spider(object):
         # logging.debug(self.urlsVisited)
         # logging.debug(self.pageLinks)
 
-        self.saveCrawlerFile()
+        # self.saveCrawlerFile()
         self.saveResultsFile()
 
     
@@ -190,24 +190,33 @@ class Spider(object):
     def saveResultsFile(self):
         totalLinks = []
         output = ''
-        for visitedUrlKey in self.urlsVisited:
-            for visitedUrl in self.urlsVisited[visitedUrlKey]:
+        for key in self.urlsVisited:
+            for visitedUrl in self.urlsVisited[key]:
                 output += "<Visited " + visitedUrl + ">\n"
-                output += "\t<No of links to Visited page: "
-                output += str(self.getLinkCount(visitedUrl)) 
+                output += "\t<No of links to Visited pages: "
+                output += str(self.getLinkCount(visitedUrl, key)) 
                 output += ">\n"
         crawlerFile = open("results.txt", "w")
         crawlerFile.write(str(output))
         crawlerFile.close()
         return True
 
-    def getLinkCount(self, url):
+    # Loop through the links found on a given visited url 
+    # and count the links it contains to other urls visited
+    def getLinkCount(self, url, key):
         count = 0
-        for page in self.pageLinks:
-            for link in self.pageLinks[page]:
-                if link == url:
-                    count += 1
+        for link in self.pageLinks[key]:
+            if self.isVisitedUrl(link):
+                count += 1
         return count
+
+    # Check if a given url has been visited
+    def isVisitedUrl(self, url):
+        for key in self.urlsVisited:
+            for visitedUrl in self.urlsVisited[key]:
+                if visitedUrl == url: 
+                    return True
+        return False
 
 
 # Set the spider crawling...
