@@ -11,20 +11,15 @@
 # @version  1.0
 # @since    25 Oct 2015
 
-
-import requests              # lib for making http requests to get page content
-from lxml import html        # parses raw html into a searchable xpath tree object
-import robotparser           # parses robots.txt files
+from lxml import html        # provides methods for performing HTTP get requests on a url and parses the HTML into a searchable dom tree object
+import robotparser           # for parsing of robots.txt files
 import urlparse              # lib for parsing urls
 from urlparse import urljoin # allows conversion of relative urls into absolute ones 
-from collections import defaultdict # dictionary data structure lib
-import sys                   # required for getting arg's from the shell
+from collections import defaultdict # dictionary data structures
+import sys                   # required for getting arg's from the command line
 import logging               # for outputting logs during development and for debugging purposes
 
-logging.basicConfig(level=logging.DEBUG)
-# ^ this provides verbose logging output for HTTP GET requests, eg:
-# INFO:requests.packages.urllib3.connectionpool:Starting new HTTP connection (1): www.dcs.bbk.ac.uk
-# DEBUG:requests.packages.urllib3.connectionpool:"GET /~martin/sewn/ls3/ HTTP/1.1" 200 221
+logging.basicConfig(level=logging.DEBUG) # provides verbose debug output, useful during development
 
 
 class Spider(object):
@@ -60,8 +55,7 @@ class Spider(object):
     
     # Recursive crawling function
     def crawlForLinks(self, url):
-        page = requests.get(url)
-        tree = html.fromstring(page.text)
+        tree = html.parse(url)
         anchors = tree.xpath('//a') # Get all anchors on the page
         self.level += 1
         self.urlsVisited[self.level].append(url)
