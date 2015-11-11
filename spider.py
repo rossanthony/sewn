@@ -1,15 +1,22 @@
 # A basic web crawler, which outputs two files:
 #  - crawl.txt    Listing the urls for each page visited, and the links contained within
 #  - results.txt  The number of links to visited pages per <Visited URL>
+# 
 # To run, first ensure you have Python installed, `python --version` will confirm this,
-# then run: `python spider.py <url_to_crawl> <depth>`, replacing the 2nd to last param with the starting
-# point for the crawler and the last param with how many pages deep you would like the crawler to go.
+# then run: `python spider.py <seed_url> <depth> <inc_dupes>`
+# params:
+#    1. <seed_url>    The URL of the page where the crawler should start
+#    2. <depth>       Max number of pages deep the crawler should be allow to crawl
+#    3. <excl_dupes>  An optional flag to exclude duplicate links from the output 
+#                     (to include all links, don't pass anything as the 3rd arg)
 # E.g. 
-#       python spider.py http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/ 10
+#       python spider.py http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/ 15
 #
 # @author   Ross Anthony <rantho01@mail.bbk.ac.uk>
 # @version  1.0
 # @since    25 Oct 2015
+#
+# Vendor dependencies:
 
 from lxml import html        # provides methods for performing HTTP get requests on a url and parses the HTML into a searchable dom tree object
 import robotparser           # for parsing of robots.txt files
@@ -25,10 +32,10 @@ logging.basicConfig(level=logging.DEBUG) # provides verbose debug output, useful
 class Spider(object):
 
     def __init__(self):
-        self.baseUrl = sys.argv[1] # URL to be indexed, the starting point for the crawler
-        self.depth = sys.argv[2]   # Limit for number of pages deep the spider should crawl
-        self.level = 0             # Starting level, gets incremented each time a new page is crawled
-        self.allowDupes = True     # Toggles whether to record duplicate URLs per page
+        self.seedUrl = sys.argv[1]       # URL to be indexed, the starting point for the crawler
+        self.maxDepth = int(sys.argv[2]) # Limit for number of pages deep the spider should crawl
+        self.currentDepth = 0            # Starting level, gets incremented each time a new page is crawled
+        self.allowDupes = True           # Toggles whether to record duplicate URLs per page
         
         # Cmd line override for allowDupes toggle
         if len(sys.argv) > 3: self.allowDupes = False
@@ -39,11 +46,11 @@ class Spider(object):
         
         # Get the robots.txt
         self.robotParser = robotparser.RobotFileParser()
-        self.robotParser.set_url(urlparse.urljoin(self.baseUrl, 'robots.txt'))
+        self.robotParser.set_url(urlparse.urljoin(self.seedUrl, 'robots.txt'))
         self.robotParser.read()
         
         # Kick off the recursive crawling function
-        self.crawlForLinks(self.baseUrl)
+        self.crawlForLinks(self.seedUrl)
         
         # Log the result (for debugging during development only)
         # logging.debug(self.urlsVisited)
@@ -57,27 +64,24 @@ class Spider(object):
     def crawlForLinks(self, url):
         tree = html.parse(url)
         anchors = tree.xpath('//a') # Get all anchors on the page
-        self.level += 1
-        self.urlsVisited[self.level].append(url)
+        self.currentDepth += 1
+        self.urlsVisited[self.currentDepth].append(url)
 
         for link in anchors:
             if 'href' in link.attrib:
                 # Add each 'unqiue' link on the current page being crawled into the dictionary
                 if not self.pageAlreadyAdded(self.getAbsoluteUrl(link, url)) or self.allowDupes:
-                    self.pageLinks[self.level].append(self.getAbsoluteUrl(link, url))
-            # else:
-            #     logging.debug(link)
-            #     print " ^^ " + url + " must contain an anchor element without an href attribute!!"
+                    self.pageLinks[self.currentDepth].append(self.getAbsoluteUrl(link, url))
 
         # Loop back through the urls just found on this page and run crawls on each in turn
-        for url in self.pageLinks[self.level]:
-            if self.isAllowedUrl(url) and self.level < self.depth:
-                if not self.urlAlreadyCrawled(url):
+        if self.currentDepth <= self.maxDepth:
+            for url in self.pageLinks[self.currentDepth]:
+                if self.isAllowedUrl(url) and not self.urlAlreadyCrawled(url):
                     self.crawlForLinks(url)
             #     else:
             #         print url + " already checked" 
             # else:
-            #     print "Disallowed URL: %s %s\n" % (self.level, url)
+            #     print "Disallowed URL: %s %s\n" % (self.currentDepth, url)
 
 
     def urlAlreadyCrawled(self, url):
@@ -87,36 +91,35 @@ class Spider(object):
                     return True
         return False
 
-
+    # Helper method which checks if a URL has already been visited
+    # 
+    # Returns: Bool
+    #
     def pageAlreadyAdded(self, url):
-        for v in self.pageLinks[self.level]:
+        for v in self.pageLinks[self.currentDepth]:
             if url == v:
                 return True
         return False
 
 
-    # This method converts URLs into absolute ones
+    # Convert a URL into absolute
+    # 
+    # Returns: String (url)
+    #
     def getAbsoluteUrl(self, link, currentPageUrl):
-        if link.attrib['href'][:4] == 'http':
+        if link.attrib['href'][:4] == 'http':       # link starts with a protocol so must already be absolute
             return link.attrib['href']
-        elif link.attrib['href'][:6] == 'mailto':
-            return link.attrib['href']
-        elif link.attrib['href'][:2] == './':
-            # print "URL JOIN 1:"
-            # print urljoin(currentPageUrl, link.attrib['href'])
-            return self.baseUrl + link.attrib['href'][2:]
-        elif link.attrib['href'][:1] == '/':
-            return self.baseUrl + link.attrib['href'][1:]
-        elif link.attrib['href'][:2] == '..':
-            # print "URL JOIN:"
-            # print urljoin(currentPageUrl, link.attrib['href'])
+        elif link.attrib['href'][:6] == 'mailto':   # email mailto link
+            return link.attrib['href'] 
+        else: # URL is either relative, or up at least one folder from current page
             return urljoin(currentPageUrl, link.attrib['href'])
-            # print urlparse(link.attrib['href'])
-        else:
-            return self.baseUrl + link.attrib['href']
 
 
-    # This method converts URLs into relative ones
+    # Convert URL into a URI relative to the Seed URL
+    # (used by the isAllowedUrl method)
+    #
+    # Returns: String (uri)
+    #
     def getRelativeUrl(self, link):
         if not link:
             return False
@@ -128,28 +131,35 @@ class Spider(object):
             return link[1:]
         elif link[:1] == '/':
             return link
-        elif link.find(self.baseUrl) == 0:
-            return link.replace(self.baseUrl, '/')
+        elif link.find(self.seedUrl) == 0:
+            return link.replace(self.seedUrl, '/')
         else:
             return False
 
 
+    # Consult the robots.txt to see if the given URL can be crawled
+    #
+    # Returns: Bool 
+    #
     def isAllowedUrl(self, link):
         # Check if the URL is within the base URL
-        if link.find(self.baseUrl) == 0:
+        if link.find(self.seedUrl) == 0:
             # Check if the robots.txt allows crawling of this URL
             if self.getRelativeUrl(link):
                 return self.robotParser.can_fetch("*", self.getRelativeUrl(link))
         return False
 
-    # Loop through the Visited Urls and then loop through the links on each page,
-    # output as a file in the following format:
+
+    # Iterate over the Visited Urls and then all links on each page,
+    # output as a file [crawl.txt] in the following format:
+    #
     # <Visited URL1>
     #     <Link URL1>
     #     <Link URL2>
     # <Visited URL2>
     #     <Link URL1>
     #     ... etc.
+    #
     def saveCrawlerFile(self):
         output = ''
         for visitedUrlKey in self.urlsVisited:
@@ -162,13 +172,16 @@ class Spider(object):
         crawlerFile.close()
         return True
 
-    # Loop through the Visited Urls and count how many times each one is linked to from other pages,
-    # output as a file in the following format:
+
+    # Iterate over the Visited Urls and count how many links it contains to other pages Visited,
+    # output as a file [results.txt] in the following format:
+    #
     # <Visited URL1>
     #       <No of links to Visited pages: X>
     # <Visited URL2>
     #       <No of links to Visited pages: Y>
-    # ... etc.    
+    # ... etc. 
+    #   
     def saveResultsFile(self):
         totalLinks = []
         output = ''
@@ -185,6 +198,9 @@ class Spider(object):
 
     # Loop through the links found on a given visited url 
     # and count the links it contains to other urls visited
+    #
+    # Returns: Int 
+    #
     def getLinkCount(self, url, key):
         count = 0
         for link in self.pageLinks[key]:
@@ -192,7 +208,11 @@ class Spider(object):
                 count += 1
         return count
 
-    # Check if a given url has been visited
+
+    # Check if a given url has already been visited
+    #
+    # Returns: Bool
+    #
     def isVisitedUrl(self, url):
         for key in self.urlsVisited:
             for visitedUrl in self.urlsVisited[key]:
