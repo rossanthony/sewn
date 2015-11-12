@@ -6,8 +6,8 @@
 # then run: `python spider.py <seed_url> <depth> <inc_dupes>`
 # params:
 #    1. <seed_url>    The URL of the page where the crawler should start
-#    2. <depth>       Max number of pages deep the crawler should be allow to crawl
-#    3. <excl_dupes>  An optional flag to exclude duplicate links from the output 
+#    2. <depth>       [optional] Max number of pages deep the crawler should be allow to crawl
+#    3. <excl_dupes>  [optional] Flag to exclude duplicate links from the output 
 #                     (to include all links, don't pass anything as the 3rd arg)
 # E.g. 
 #       python spider.py http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/ 15
@@ -26,41 +26,47 @@ from collections import defaultdict # dictionary data structures
 import sys                   # required for getting arg's from the command line
 import logging               # for outputting logs during development and for debugging purposes
 
-logging.basicConfig(level=logging.DEBUG) # provides verbose debug output, useful during development
+#logging.basicConfig(level=logging.DEBUG) # provides verbose debug output, useful during development
 
 
 class Spider(object):
 
     def __init__(self):
         self.seedUrl = sys.argv[1]       # URL to be indexed, the starting point for the crawler
-        self.maxDepth = int(sys.argv[2]) # Limit for number of pages deep the spider should crawl
         self.currentDepth = 0            # Starting level, gets incremented each time a new page is crawled
         self.allowDupes = True           # Toggles whether to record duplicate URLs per page
+        self.maxDepth = 100              # Limit for number of pages deep the spider should crawl
         
+        # Cmd line override for maxDepth
+        if len(sys.argv) > 2: self.maxDepth = int(sys.argv[2]) 
+        if self.maxDepth > 100: self.maxDepth = 100 # Prevent excessively deep crawls
+
         # Cmd line override for allowDupes toggle
         if len(sys.argv) > 3: self.allowDupes = False
 
         # Data structures
-        self.urlsVisited = defaultdict(list) # holds an ordered list of the URLs visited
-        self.pageLinks = defaultdict(list)   # holds a list of the links in each page
+        self.urlsVisited = defaultdict(list)  # holds a list of the URLs visited
+        self.pageLinks   = defaultdict(list)  # holds a list of the links in each page
         
         # Get the robots.txt
         self.robotParser = robotparser.RobotFileParser()
         self.robotParser.set_url(urlparse.urljoin(self.seedUrl, 'robots.txt'))
         self.robotParser.read()
         
-        # Kick off the recursive crawling function
+        # Start crawling for links by starting at the seedUrl
         self.crawlForLinks(self.seedUrl)
-        
-        # Log the result (for debugging during development only)
-        # logging.debug(self.urlsVisited)
-        # logging.debug(self.pageLinks)
 
+        # Finally, generate the output files...
         self.saveCrawlerFile()
         self.saveResultsFile()
 
     
-    # Recursive crawling function
+    # Recursive crawling function, responsible for visiting pages and scanning for links
+    # Pushes the URLs of each page visited onto the self.urlsVisited dict
+    # Scans the html of each page for anchor elements and adds them to the self.pageLinks dict
+    #
+    # Returns: Void
+    #
     def crawlForLinks(self, url):
         tree = html.parse(url)
         anchors = tree.xpath('//a') # Get all anchors on the page
@@ -70,7 +76,7 @@ class Spider(object):
         for link in anchors:
             if 'href' in link.attrib:
                 # Add each 'unqiue' link on the current page being crawled into the dictionary
-                if not self.pageAlreadyAdded(self.getAbsoluteUrl(link, url)) or self.allowDupes:
+                if not self.pageAlreadyVisited(self.getAbsoluteUrl(link, url)) or self.allowDupes:
                     self.pageLinks[self.currentDepth].append(self.getAbsoluteUrl(link, url))
 
         # Loop back through the urls just found on this page and run crawls on each in turn
@@ -79,11 +85,15 @@ class Spider(object):
                 if self.isAllowedUrl(url) and not self.urlAlreadyCrawled(url):
                     self.crawlForLinks(url)
             #     else:
-            #         print url + " already checked" 
+            #         print "Already checked: %s\n" % (url)
             # else:
             #     print "Disallowed URL: %s %s\n" % (self.currentDepth, url)
 
 
+    # Helper method which checks if a URL has already been crawled
+    # 
+    # Returns: Bool
+    #
     def urlAlreadyCrawled(self, url):
         for k in self.urlsVisited:
             for v in self.urlsVisited[k]:
@@ -91,11 +101,12 @@ class Spider(object):
                     return True
         return False
 
-    # Helper method which checks if a URL has already been visited
+
+    # Helper method which checks if a page has already been visited
     # 
     # Returns: Bool
     #
-    def pageAlreadyAdded(self, url):
+    def pageAlreadyVisited(self, url):
         for v in self.pageLinks[self.currentDepth]:
             if url == v:
                 return True
@@ -164,9 +175,9 @@ class Spider(object):
         output = ''
         for visitedUrlKey in self.urlsVisited:
             for visitedUrl in self.urlsVisited[visitedUrlKey]:
-                output += "<Visited " + visitedUrl + ">\n"
+                output += "<Visited %s>\n" % (visitedUrl)
                 for linkOnPage in self.pageLinks[visitedUrlKey]:
-                    output += "\t<Link " + linkOnPage + ">\n"
+                    output += "\t<Link %s>\n" % (linkOnPage)
         crawlerFile = open("crawl.txt", "w")
         crawlerFile.write(str(output))
         crawlerFile.close()
@@ -187,10 +198,8 @@ class Spider(object):
         output = ''
         for key in self.urlsVisited:
             for visitedUrl in self.urlsVisited[key]:
-                output += "<Visited " + visitedUrl + ">\n"
-                output += "\t<No of links to Visited pages: "
-                output += str(self.getLinkCount(visitedUrl, key)) 
-                output += ">\n"
+                output += "<Visited %s>\n" % (visitedUrl)
+                output += "\t<No of links to Visited pages: %s>\n" % (str(self.getLinkCount(visitedUrl, key)))
         crawlerFile = open("results.txt", "w")
         crawlerFile.write(str(output))
         crawlerFile.close()
