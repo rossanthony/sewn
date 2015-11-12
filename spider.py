@@ -83,7 +83,6 @@ class Spider(object):
         self.urlsVisited[self.currentDepth].append(url)
 
         for link in anchors:
-            print link.attrib
             if 'href' in link.attrib:
                 # Add each 'unqiue' link on the current page being crawled into the dictionary
                 if not self.pageAlreadyVisited(self.getAbsoluteUrl(link, url)) or self.allowDupes:
