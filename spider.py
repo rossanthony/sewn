@@ -3,19 +3,28 @@
 #  - results.txt  The number of links to visited pages per <Visited URL>
 # 
 # To run, first ensure you have Python installed, `python --version` will confirm this,
-# then run: `python spider.py <seed_url> <depth> <inc_dupes>`
+# then run `python spider.py <seed_url> <incl_dupes> <depth>`
 # params:
 #    1. <seed_url>    The URL of the page where the crawler should start
-#    2. <depth>       [optional] Max number of pages deep the crawler should be allow to crawl
-#    3. <excl_dupes>  [optional] Flag to exclude duplicate links from the output 
-#                     (to include all links, don't pass anything as the 3rd arg)
+#    2. <incl_dupes>  [optional] Flag to include duplicate links from the output (default = exclude dupes)
+#    3. <depth>       [optional] Number of pages deep the crawler should be allow to crawl (max limit = 100)
+#                     
 # E.g. 
-#       python spider.py http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/ 15
+#       python spider.py http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/ dupes 50
+#
+#       ^ this will run the spider with 'http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/' as the seed URL, 
+#       including duplicates, with a max depth of 50
+#       
+#       python spider.py http://www.dcs.bbk.ac.uk/~martin/sewn/ls3/
+#
+#       ^ this will do the same as above but exclude duplicate links (max depth will default to 100)
+#
 #
 # @author   Ross Anthony <rantho01@mail.bbk.ac.uk>
 # @version  1.0
 # @since    25 Oct 2015
-#
+
+
 # Vendor dependencies:
 
 from lxml import html        # provides methods for performing HTTP get requests on a url and parses the HTML into a searchable dom tree object
@@ -34,15 +43,15 @@ class Spider(object):
     def __init__(self):
         self.seedUrl = sys.argv[1]       # URL to be indexed, the starting point for the crawler
         self.currentDepth = 0            # Starting level, gets incremented each time a new page is crawled
-        self.allowDupes = True           # Toggles whether to record duplicate URLs per page
+        self.allowDupes = False          # Toggles whether to record duplicate URLs per page
         self.maxDepth = 100              # Limit for number of pages deep the spider should crawl
         
-        # Cmd line override for maxDepth
-        if len(sys.argv) > 2: self.maxDepth = int(sys.argv[2]) 
-        if self.maxDepth > 100: self.maxDepth = 100 # Prevent excessively deep crawls
-
         # Cmd line override for allowDupes toggle
-        if len(sys.argv) > 3: self.allowDupes = False
+        if len(sys.argv) > 2: self.allowDupes = True
+
+        # Cmd line override for maxDepth
+        if len(sys.argv) > 3: self.maxDepth = int(sys.argv[3]) 
+        if self.maxDepth > 100: self.maxDepth = 100 # Prevent excessively deep crawls
 
         # Data structures
         self.urlsVisited = defaultdict(list)  # holds a list of the URLs visited
@@ -74,12 +83,13 @@ class Spider(object):
         self.urlsVisited[self.currentDepth].append(url)
 
         for link in anchors:
+            print link.attrib
             if 'href' in link.attrib:
                 # Add each 'unqiue' link on the current page being crawled into the dictionary
                 if not self.pageAlreadyVisited(self.getAbsoluteUrl(link, url)) or self.allowDupes:
                     self.pageLinks[self.currentDepth].append(self.getAbsoluteUrl(link, url))
 
-        # Loop back through the urls just found on this page and run crawls on each in turn
+        # Loop back through the urls found on this page and run new crawls on each in turn
         if self.currentDepth <= self.maxDepth:
             for url in self.pageLinks[self.currentDepth]:
                 if self.isAllowedUrl(url) and not self.urlAlreadyCrawled(url):
@@ -205,6 +215,7 @@ class Spider(object):
         crawlerFile.close()
         return True
 
+
     # Loop through the links found on a given visited url 
     # and count the links it contains to other urls visited
     #
@@ -213,8 +224,7 @@ class Spider(object):
     def getLinkCount(self, url, key):
         count = 0
         for link in self.pageLinks[key]:
-            if self.isVisitedUrl(link):
-                count += 1
+            if self.isVisitedUrl(link): count += 1
         return count
 
 
