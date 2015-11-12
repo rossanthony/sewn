@@ -9,9 +9,10 @@ To run, first ensure you have Python installed, `python --version` will confirm 
     python spider.py <seed_url> <incl_dupes> <depth>
 
 Params:
-    1. <seed_url>    The URL of the page where the crawler should start
-    2. <incl_dupes>  [optional] Flag to include duplicate links from the output (default = exclude dupes)
-    3. <depth>       [optional] Number of pages deep the crawler should be allow to crawl (max limit = 100)
+
+1. <seed_url>    The URL of the page where the crawler should start
+2. <incl_dupes>  [optional] Flag to include duplicate links from the output (default = exclude dupes)
+3. <depth>       [optional] Number of pages deep the crawler should be allow to crawl (max limit = 100)
                      
 E.g. 
     
